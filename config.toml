@@ -1,0 +1,10 @@
+[server]
+port = 8501
+enableCORS = false
+
+[browser]
+serverAddress = "localhost"
+gatherUsageStats = false
+
+[runner]
+magicEnabled = false
