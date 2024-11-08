@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from PIL import Image
 from io import BytesIO
+import torch
+from PIL.ImageMath import imagemath_max
 
 
 class CLimages:
@@ -142,8 +144,40 @@ class CLimages:
         return None
 
 
-# CVimage:CLimages = CLimages()
+
+    @staticmethod
+    def homomorphic_filter_torch(img, cutoff_freq, gamma_l, gamma_h, c):
+        image_array = []
+        for image in cv2.split(img):
+            image = torch.tensor(image, dtype=torch.float32)
+            log_image = torch.log1p(image)
+            log_image = log_image / torch.log(torch.tensor(256.0))
+
+            dft = torch.fft.fftshift(torch.fft.fft2(log_image))
+
+            rows, cols = image.shape
+            row_mid, col_mid = rows // 2, cols // 2
+            y, x = torch.meshgrid(torch.arange(rows), torch.arange(cols), indexing='ij')
+            dist = torch.sqrt((x - col_mid) ** 2 + (y - row_mid) ** 2)
+            mask = (gamma_h - gamma_l) * (1 - torch.exp(-c * (dist ** 2 / cutoff_freq ** 2))) + gamma_l
+
+            dft_filtered = dft * mask
+
+            filtered_image = torch.fft.ifft2(torch.fft.ifftshift(dft_filtered))
+            filtered_image = torch.exp(torch.abs(filtered_image)) - 1
+            filtered_image = (filtered_image - filtered_image.min()) / (filtered_image.max() - filtered_image.min())
+            filtered_image = filtered_image * 255
+            filtered_image = torch.clamp(filtered_image, 0, 255).byte()
+
+            image_array.append(filtered_image.numpy())
+
+        image_merge = cv2.merge(image_array)
+
+        return image_merge
+
+
+CVimage:CLimages = CLimages()
 
 
 ## []
-CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
+# CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))

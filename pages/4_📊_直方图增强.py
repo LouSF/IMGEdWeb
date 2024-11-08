@@ -8,7 +8,7 @@ def page():
     st.set_page_config(page_title="直方图增强", page_icon="📊")
 
     st.markdown("# 通过本页面可以应用直方图增强")
-    st.sidebar.header("参数调整")
+    st.sidebar.header("此处无需参数调整")
     st.write(
         """
         通过下面的工具栏可以应用直方图增强
