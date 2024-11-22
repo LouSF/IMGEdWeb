@@ -278,9 +278,43 @@ class CLimages:
             return corrected_img
         return None
 
+    def remove_noise(self, shape, iterations):
+        if self.have_img:
+            kernel = np.ones((shape, shape), np.uint8)
+            denoised = self.image
+            denoised = cv2.dilate(denoised, kernel, iterations=iterations)
+            denoised = cv2.erode(denoised, kernel, iterations=iterations)
+            _, denoised = cv2.threshold(denoised, 127, 255, cv2.THRESH_BINARY)
+            return denoised
+        return None
+
+    def extract_edges(self, shape):
+        if self.have_img:
+            kernel = np.ones((shape, shape), np.uint8)
+            tmp_img = cv2.erode(self.image, kernel)
+            # edges = tmp_img - self.image
+            edges = cv2.bitwise_xor(tmp_img, self.image)
+            edges = cv2.bitwise_not(edges)
+            return edges
+        return None
+
+    def correct_uneven_illumination(self, type, shape):
+        if self.have_img:
+            if type == 'TOPHAT':
+                type = cv2.MORPH_TOPHAT
+            elif type == 'BLACKHAT':
+                type = cv2.MORPH_BLACKHAT
+
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (shape, shape))
+            tophat = cv2.morphologyEx(self.image, type, kernel)
+            tophat = cv2.bitwise_not(tophat)
+            return tophat
+        return None
+
 
 CVimage:CLimages = CLimages()
 
 
 ## [测试部分]
-CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
+# CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
+CVimage:CLimages = CLimages(np.array(Image.open('./test/work3_2.png')))
