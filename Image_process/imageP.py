@@ -175,9 +175,112 @@ class CLimages:
 
         return image_merge
 
+    # to fix it
+    # def warp_triangle(self, src_points, dst_points):
+    #     if self.have_img:
+    #         # 获得仿射变换矩阵
+    #         M = cv2.getAffineTransform(np.float32(src_points), np.float32(dst_points))
+    #         # 应用仿射变换
+    #         warped_img = cv2.warpAffine(self.image, M, (self.image.shape[1], self.image.shape[0]))
+    #         return warped_img
+    #     return None
+
+    def warp_to_triangle(self):
+        if self.have_img:
+            rows, cols = self.image.shape[:2]
+
+            src_pts = np.float32([
+                [0, 0],
+                [cols - 1, 0],
+                [cols - 1, rows - 1],
+                [0, rows - 1]
+            ])
+
+            dst_pts = np.float32([
+                [0, 0],
+                [cols - 1, 0],
+                [0, rows - 1],
+                [0, 0]
+            ])
+
+            matrix = cv2.getAffineTransform(src_pts[:3], dst_pts[:3])
+            transformed_img = cv2.warpAffine(self.image, matrix, (cols, rows))
+            return transformed_img
+        return None
+
+    def warp_s_shape(self, range_val):
+        if self.have_img:
+            height, width = self.image.shape[:2]
+            distorted_img = np.zeros_like(self.image)
+
+            for i in range(height):
+                temp = float(
+                    (width - range_val) / 2 + (width - range_val) * np.sin((2 * np.pi * i) / height + np.pi) / 2)
+                for j in range(int(temp + 0.5), int(range_val + temp)):
+                    m = int(((j - temp) * width / range_val))
+                    if m >= width:
+                        m = width - 1
+                    if m < 0:
+                        m = 0
+                    distorted_img[i, j] = self.image[i, m]
+            return distorted_img
+        return None
+
+    def warp_concave(self, intensity=1.5):
+        """
+        对图像仅在水平方向应用凹形变换效果。
+
+        参数:
+            intensity (float): 控制凹形变换强度的参数，默认值为 1.5。
+        """
+        if self.image is None:
+            return None
+
+        # 获取图像尺寸
+        height, width = self.image.shape[:2]
+
+        # 创建映射矩阵
+        map_x = np.zeros((height, width), dtype=np.float32)
+        map_y = np.zeros((height, width), dtype=np.float32)
+
+        # 中心点计算
+        center_x = width / 2
+
+        # 定义水平方向的凹形变换逻辑
+        for i in range(height):
+            for j in range(width):
+                # 计算水平偏移
+                x = j - center_x
+                r = abs(x) ** intensity / (width ** (intensity - 1))  # 归一化后计算
+                if x > 0:
+                    map_x[i, j] = center_x + r
+                else:
+                    map_x[i, j] = center_x - r
+
+                # 垂直方向保持不变
+                map_y[i, j] = i
+
+        # 使用 OpenCV remap 方法应用映射变换
+        distorted_img = cv2.remap(self.image, map_x, map_y, interpolation=cv2.INTER_LINEAR,
+                                  borderMode=cv2.BORDER_CONSTANT)
+        return distorted_img
+
+    def correct_distortion(self, k1, k2, p1, p2):
+        if self.have_img:
+            h, w = self.image.shape[:2]
+            dist_coeffs = np.array([k1, k2, p1, p2, 0])
+            camera_matrix = np.array([[w, 0, w / 2],
+                                      [0, h, h / 2],
+                                      [0, 0, 1]])
+
+            new_camera_matrix, _ = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coeffs, (w, h), 1, (w, h))
+            corrected_img = cv2.undistort(self.image, camera_matrix, dist_coeffs, None, new_camera_matrix)
+            return corrected_img
+        return None
+
 
 CVimage:CLimages = CLimages()
 
 
-## []
-# CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
+## [测试部分]
+CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
