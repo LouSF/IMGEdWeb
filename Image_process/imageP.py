@@ -226,44 +226,28 @@ class CLimages:
             return distorted_img
         return None
 
-    def warp_concave(self, intensity=1.5):
-        """
-        对图像仅在水平方向应用凹形变换效果。
+    import numpy as np
 
-        参数:
-            intensity (float): 控制凹形变换强度的参数，默认值为 1.5。
-        """
-        if self.image is None:
-            return None
+    def warp_concave(self, intensity=1):
+        if self.have_img:
+            height, width, channels = self.image.shape
+            image = np.zeros((height, width, channels), dtype=np.uint8)
 
-        # 获取图像尺寸
-        height, width = self.image.shape[:2]
+            for i in range(height):
+                temp = float((width - width // 2 * intensity) * np.sin(((2 * np.pi * i) / height) /2))
 
-        # 创建映射矩阵
-        map_x = np.zeros((height, width), dtype=np.float32)
-        map_y = np.zeros((height, width), dtype=np.float32)
+                if intensity < 1:
+                    temp = width  - temp
 
-        # 中心点计算
-        center_x = width / 2
-
-        # 定义水平方向的凹形变换逻辑
-        for i in range(height):
-            for j in range(width):
-                # 计算水平偏移
-                x = j - center_x
-                r = abs(x) ** intensity / (width ** (intensity - 1))  # 归一化后计算
-                if x > 0:
-                    map_x[i, j] = center_x + r
-                else:
-                    map_x[i, j] = center_x - r
-
-                # 垂直方向保持不变
-                map_y[i, j] = i
-
-        # 使用 OpenCV remap 方法应用映射变换
-        distorted_img = cv2.remap(self.image, map_x, map_y, interpolation=cv2.INTER_LINEAR,
-                                  borderMode=cv2.BORDER_CONSTANT)
-        return distorted_img
+                for j in range(int(temp + 0.5), int(width - temp)):
+                    distance = int(width - temp) - int(temp + 0.5)
+                    ratio = distance / width
+                    stepsize = 1.0 / ratio
+                    for c in range(channels):
+                        index = int((j - temp) * stepsize)
+                        image[i, j, c] = self.image[i, index, c]
+            return image
+        return None
 
     def correct_distortion(self, k1, k2, p1, p2):
         if self.have_img:
