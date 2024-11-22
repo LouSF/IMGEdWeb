@@ -301,4 +301,4 @@ CVimage:CLimages = CLimages()
 
 ## [测试部分]
 # CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
-CVimage:CLimages = CLimages(np.array(Image.open('./test/work3_2.png')))
+# CVimage:CLimages = CLimages(np.array(Image.open('./test/work3_2.png')))
