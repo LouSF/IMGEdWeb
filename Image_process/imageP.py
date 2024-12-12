@@ -295,10 +295,71 @@ class CLimages:
             return tophat
         return None
 
+    def hough_transform(self, threshold, min_line_length, max_line_gap):
+        if self.have_img:
+            edges = cv2.Canny(self.image, 50, 150)
+            lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold, minLineLength=min_line_length,
+                                    maxLineGap=max_line_gap)
+            line_image = np.copy(self.image)
+            if lines is not None:
+                for line in lines:
+                    x1, y1, x2, y2 = line[0]
+                    cv2.line(line_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            return line_image
+        return None
+
+    def otsu_transform(self):
+        if self.have_img:
+            gray = self.image if len(self.image.shape) == 2 else cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+            _, otsu_thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            return otsu_thresh
+        return None
+
+    def lane_detection(self, canny_threshold1, canny_threshold2, hough_threshold, min_line_length, max_line_gap):
+        if self.have_img:
+            gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+
+            _, gray_img = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+
+            edges = cv2.Canny(gray_img, canny_threshold1, canny_threshold2)
+
+            mask = np.zeros_like(edges)
+            height, width = edges.shape
+            polygon = np.array([[
+                (0, height),
+                (width, height),
+                (width - width // 2.5, height // 3),
+                (width // 2.5, height // 3),
+            ]], dtype=np.int32)
+            cv2.fillPoly(mask, polygon, 255)
+
+            masked_edges = cv2.bitwise_and(edges, mask)
+
+            lines = cv2.HoughLinesP(masked_edges, 1, np.pi / 180, hough_threshold,
+                                    minLineLength=min_line_length,
+                                    maxLineGap=max_line_gap)
+
+
+            line_image = np.zeros_like(self.image)
+
+            if lines is not None:
+                for line in lines:
+                    x1, y1, x2, y2 = line[0]
+                    cv2.line(line_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+            combined_image = cv2.addWeighted(self.image, 0.8, line_image, 1, 0)
+            return combined_image
+        return None
+
+
+
 
 CVimage:CLimages = CLimages()
 
 
 ## [测试部分]
 # CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
-# CVimage:CLimages = CLimages(np.array(Image.open('./test/work3_2.png')))
+# CVimage:CLimages = CLimages(np.array(Image.open('./test/work3_1.png')))
+CVimage:CLimages = CLimages(np.array(Image.open('./test/work5.jpg')))
+
+
