@@ -328,8 +328,8 @@ class CLimages:
             polygon = np.array([[
                 (0, height),
                 (width, height),
-                (width - width // 2.5, height // 3),
-                (width // 2.5, height // 3),
+                (width - width // 5, height // 2.7),
+                (width // 5, height // 2.7),
             ]], dtype=np.int32)
             cv2.fillPoly(mask, polygon, 255)
 
@@ -360,6 +360,6 @@ CVimage:CLimages = CLimages()
 ## [测试部分]
 # CVimage:CLimages = CLimages(np.array(Image.open('./test/test_img.png')))
 # CVimage:CLimages = CLimages(np.array(Image.open('./test/work3_1.png')))
-CVimage:CLimages = CLimages(np.array(Image.open('./test/work5.jpg')))
-
+# CVimage:CLimages = CLimages(np.array(Image.open('./test/work5_1.png')))
+# CVimage:CLimages = CLimages(np.array(Image.open('./test/Original-image-of-Lena-in-512x512-pixels.png')))
 
